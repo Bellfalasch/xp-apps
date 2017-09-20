@@ -603,4 +603,12 @@ export class RegionView
             //event.target.appendChild(document.getElementById(data));
         }
     }
+
+    isContainer(): boolean {
+        return true;
+    }
+
+    isDraggableView(): boolean {
+        return false;
+    }
 }

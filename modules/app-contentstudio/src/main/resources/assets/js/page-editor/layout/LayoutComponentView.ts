@@ -192,5 +192,9 @@ export class LayoutComponentView
             regionView.unItemViewRemoved(this.itemViewRemovedListener);
         }
     }
+
+    isContainer(): boolean {
+        return true;
+    }
 }
 

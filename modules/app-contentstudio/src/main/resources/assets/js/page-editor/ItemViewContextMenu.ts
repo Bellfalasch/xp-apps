@@ -1,4 +1,5 @@
 import './../api.ts';
+import {ItemView} from './ItemView';
 import {ItemViewContextMenuTitle} from './ItemViewContextMenuTitle';
 import MinimizeWizardPanelEvent = api.app.wizard.MinimizeWizardPanelEvent;
 import Action = api.ui.Action;
@@ -11,63 +12,53 @@ export enum ItemViewContextMenuOrientation {
 export class ItemViewContextMenu
     extends api.dom.DivEl {
 
+    private itemView: ItemView;
     private title: ItemViewContextMenuTitle;
     private menu: api.ui.menu.TreeContextMenu;
     private arrow: ItemViewContextMenuArrow;
     private orientation: ItemViewContextMenuOrientation = ItemViewContextMenuOrientation.DOWN;
+    //private actions: Action[];
+    private lastPosition: { x: number, y: number };
 
     private orientationListeners: { (orientation: ItemViewContextMenuOrientation): void }[] = [];
 
-    constructor(menuTitle: ItemViewContextMenuTitle, actions: Action[], showArrow: boolean = true, listenToWizard: boolean = true) {
+    constructor(itemView: ItemView, showArrow: boolean = true, listenToWizard: boolean = true) {
         super('menu item-view-context-menu');
 
-        let dragListener;
-        let upListener;
+        this.itemView = itemView;
 
         if (showArrow) {
             this.arrow = new ItemViewContextMenuArrow();
             this.appendChild(this.arrow);
         }
 
-        this.title = menuTitle;
-        if (this.title) {
-            let lastPosition: { x: number, y: number };
+        this.initTitle();
+        this.initActions();
 
-            dragListener = (e: MouseEvent) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const x = e.pageX;
-                const y = e.pageY;
+        this.initEventListeners(listenToWizard);
 
-                this.moveBy(x - lastPosition.x, y - lastPosition.y);
-                lastPosition = {x, y};
-            };
+        api.dom.Body.get().appendChild(this);
+    }
 
-            upListener = (e: MouseEvent) => {
-                e.preventDefault();
-                e.stopPropagation();
+    protected initEventListeners(listenToWizard: boolean) {
+        let lastPosition;
 
-                this.stopDrag(dragListener, upListener);
-            };
+        const dragListener = (e: MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const x = e.pageX;
+            const y = e.pageY;
 
-            this.title.onMouseDown((e: MouseEvent) => {
-                e.preventDefault();
-                e.stopPropagation();
-                lastPosition = {
-                    x: e.pageX,
-                    y: e.pageY
-                };
+            this.moveBy(x - lastPosition.x, y - lastPosition.y);
+            lastPosition = {x, y};
+        };
 
-                this.startDrag(dragListener, upListener);
-            });
-            this.appendChild(this.title);
-        }
+        const upListener = (e: MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
 
-        this.menu = new api.ui.menu.TreeContextMenu(actions, false);
-        this.menu.onItemClicked(() => {
-            this.hide();
-        });
-        this.appendChild(this.menu);
+            this.stopDrag(dragListener, upListener);
+        };
 
         this.onClicked((e: MouseEvent) => {
             // menu itself was clicked so do nothing
@@ -80,17 +71,57 @@ export class ItemViewContextMenu
             this.stopDrag(dragListener, upListener);
         });
 
-        let minimizeHandler = () => {
-            this.hide();
-        };
+        if (this.title) {
+            this.title.onMouseDown((e: MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.lastPosition = {
+                    x: e.pageX,
+                    y: e.pageY
+                };
 
-        if (listenToWizard) {
-            MinimizeWizardPanelEvent.on(minimizeHandler);
+                this.startDrag(dragListener, upListener);
+            });
+        }
+        
+        if (this.menu) {
+            this.menu.onItemClicked(() => {
+                this.hide();
+            });
         }
 
-        this.onRemoved(() => MinimizeWizardPanelEvent.un(minimizeHandler));
+        if (listenToWizard) {
+            const minimizeHandler = () => {
+                this.hide();
+            };
 
-        api.dom.Body.get().appendChild(this);
+            MinimizeWizardPanelEvent.on(minimizeHandler);
+
+            this.onRemoved(() => MinimizeWizardPanelEvent.un(minimizeHandler));
+        }
+    }
+
+    protected getTitle(): ItemViewContextMenuTitle {
+        throw new Error('Must be implemented by inheritors');
+    }
+
+    protected getActions(): Action[] {
+        throw new Error('Must be implemented by inheritors');
+    }
+
+    private initTitle() {
+        this.title = this.getTitle();
+
+        this.appendChild(this.title);
+    }
+
+    private initActions() {
+        if (this.menu) {
+            this.removeChild(this.menu);
+        }
+
+        this.menu = new api.ui.menu.TreeContextMenu(this.getActions(), false);
+        this.appendChild(this.menu);
     }
 
     showAt(x: number, y: number, notClicked: boolean = false) {
@@ -208,6 +239,10 @@ export class ItemViewContextMenu
         }
         this.setOrientation(orientation);
         return desiredY;
+    }
+
+    protected getItemView(): ItemView {
+        return this.itemView;
     }
 
 }

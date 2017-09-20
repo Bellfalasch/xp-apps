@@ -31,6 +31,8 @@ import {LayoutComponentView} from './layout/LayoutComponentView';
 import {RegionItemType} from './RegionItemType';
 import {CreateItemViewConfig} from './CreateItemViewConfig';
 import {PageModel} from './PageModel';
+import {PageModel} from './PageModel';
+import {PageViewContextMenu} from './PageViewContextMenu';
 import PageMode = api.content.page.PageMode;
 import PageModeChangedEvent = api.content.page.PageModeChangedEvent;
 import Component = api.content.page.region.Component;
@@ -120,8 +122,8 @@ export class PageView
             .setItemViewIdProducer(builder.itemViewProducer)
             .setViewer(new api.content.ContentSummaryViewer())
             .setType(PageItemType.get())
-            .setElement(builder.element)
-            .setContextMenuTitle(new PageViewContextMenuTitle(builder.liveEditModel.getContent())));
+            .setElement(builder.element)/*
+            .setContextMenuTitle(new PageViewContextMenuTitle(builder.liveEditModel.getContent()))*/);
 
         this.setPlaceholder(new PagePlaceholder(this));
 
@@ -159,9 +161,12 @@ export class PageView
         if (!this.pageModel.isPageTemplate() && !isCustomized && !isFragment) {
             this.setLocked(true);
         }
-
     }
 
+    protected createContextMenu(): PageViewContextMenu {
+        return new PageViewContextMenu(this, this.liveEditModel.getContent());
+    }
+    
     private registerPageModel() {
         if (PageView.debug) {
             console.log('PageView.registerPageModel', this.pageModel);
@@ -197,7 +202,6 @@ export class PageView
             console.log('PageView.unregisterPageModel', pageModel);
         }
         pageModel.unPropertyChanged(this.propertyChangedListener);
-        pageModel.unPageModeChanged(this.pageModeChangedListener);
         pageModel.unCustomizeChanged(this.customizeChangedListener);
     }
 
@@ -309,7 +313,7 @@ export class PageView
         return !!this.editorToolbar ? this.editorToolbar.getEl().getHeightWithMargin() : 0;
     }
 
-    private setIgnorePropertyChanges(value: boolean) {
+    public setIgnorePropertyChanges(value: boolean) {
         this.ignorePropertyChanges = value;
     }
 
@@ -383,7 +387,7 @@ export class PageView
         }
     }
 
-    createLockedContextMenu() {
+    private createLockedContextMenu() {
         return new ItemViewContextMenu(this.getContextMenuTitle(), this.getLockedMenuActions());
     }
 
@@ -1023,5 +1027,17 @@ export class PageView
 
     isNextClickDisabled(): boolean {
         return this.nextClickDisabled;
+    }
+
+    isContainer(): boolean {
+        return true;
+    }
+
+    isDraggableView(): boolean {
+        return false;
+    }
+
+    isPage(): boolean {
+        return true;
     }
 }
