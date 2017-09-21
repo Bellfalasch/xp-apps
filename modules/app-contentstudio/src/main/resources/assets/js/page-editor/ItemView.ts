@@ -14,7 +14,7 @@ import {ItemViewId} from './ItemViewId';
 import {ItemViewSelectedEvent} from './ItemViewSelectedEvent';
 import {ItemViewDeselectedEvent} from './ItemViewDeselectedEvent';
 import {ItemViewIconClassResolver} from './ItemViewIconClassResolver';
-import {Position} from './Position';
+import {ClickPosition} from './ClickPosition';
 import {PageView} from './PageView';
 import Component = api.content.page.region.Component;
 import i18n = api.util.i18n;
@@ -515,11 +515,11 @@ export class ItemView
                     pageView.setTextEditMode(false);
                     this.unhighlight();
                 } else {
-                    this.select(<Position>clickPosition, menuPosition, false, rightClicked);
+                    this.select(clickPosition, menuPosition, false, rightClicked);
                 }
 
             } else if (isViewInsideSelectedContainer && rightClicked) {
-                SelectedHighlighter.get().getSelectedView().showContextMenu(<Position>clickPosition);
+                SelectedHighlighter.get().getSelectedView().showContextMenu(clickPosition);
             }
         } else {
             this.deselect();
@@ -555,7 +555,7 @@ export class ItemView
         return this.itemViewIdProducer;
     }
 
-    showContextMenu(clickPosition?: Position, menuPosition?: ItemViewContextMenuPosition) {
+    showContextMenu(clickPosition?: ClickPosition, menuPosition?: ItemViewContextMenuPosition) {
         if (this.getPageView().isDisabledContextMenu()) {
             return;
         }
@@ -570,7 +570,7 @@ export class ItemView
         let y;
 
         if (!this.contextMenu) {
-            this.contextMenu = this.createContextMenu(this);
+            this.contextMenu = this.createContextMenu();
         }
 
         if (clickPosition) {
@@ -585,7 +585,7 @@ export class ItemView
         this.contextMenu.showAt(x, y, !clickPosition);
     }
 
-    protected createContextMenu(itemView: ItemView): ItemViewContextMenu {
+    public createContextMenu(): ItemViewContextMenu {
         throw new Error('Must be implemented by inheritors');
     }
 
@@ -638,7 +638,7 @@ export class ItemView
         return this.getEl().hasAttribute('data-live-edit-selected');
     }
 
-    select(clickPosition?: Position, menuPosition?: ItemViewContextMenuPosition, isNew: boolean = false,
+    select(clickPosition?: ClickPosition, menuPosition?: ItemViewContextMenuPosition, isNew: boolean = false,
            rightClicked: boolean = false) {
         Highlighter.get().hide();
         this.selectItem();

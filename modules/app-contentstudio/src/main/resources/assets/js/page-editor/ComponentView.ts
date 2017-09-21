@@ -291,11 +291,11 @@ export class ComponentView<COMPONENT extends Component>
 
         return this;
     }
-
+/*
     getType(): ComponentItemType {
         return <ComponentItemType>super.getType();
     }
-
+*/
     setComponent(component: COMPONENT) {
         if (component) {
             if (this.component) {

@@ -176,7 +176,8 @@ export class ItemViewContextMenu<I extends ItemView> extends api.dom.DivEl {
     }
 
     protected getActions(): ContextMenuAction[] {
-        throw new Error('Must be implemented by inheritors');
+        //throw new Error('Must be implemented by inheritors');
+        return this.actions;
     }
 
     private initTitle() {
@@ -202,7 +203,7 @@ export class ItemViewContextMenu<I extends ItemView> extends api.dom.DivEl {
         this.menu.moveBy.call(this, dx, dy);
     }
 
-    setActions(actions: api.ui.Action[]) {
+    setActions(actions: ContextMenuAction[]) {
         this.menu.setActions(actions);
     }
 

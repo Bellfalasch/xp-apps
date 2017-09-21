@@ -15,7 +15,7 @@ import {ComponentLoadedEvent} from '../../page-editor/ComponentLoadedEvent';
 import {ComponentResetEvent} from '../../page-editor/ComponentResetEvent';
 import {ItemView} from '../../page-editor/ItemView';
 import {ComponentView} from '../../page-editor/ComponentView';
-import {Position} from '../../page-editor/Position';
+import {ClickPosition} from '../../page-editor/ClickPosition';
 import Content = api.content.Content;
 import TreeNode = api.ui.treegrid.TreeNode;
 
@@ -673,30 +673,26 @@ export class PageComponentsView
         return cellNumber === 1;
     }
 
-    private showContextMenu(row: number, clickPosition: Position) {
-        let node = this.tree.getGrid().getDataView().getItem(row);
-        let itemView: ItemView;
-        let pageView: PageView;
+    private getContextMenuTargetView(row: number): ItemView {
 
-        if (node) {
-            itemView = node.getData();
-            pageView = itemView.getPageView();
-        } else {
-            pageView = this.pageView;
-        }
-        let contextMenuActions: Action[];
+        const node = this.tree.getGrid().getDataView().getItem(row);
+        const pageView: PageView = node ? node.getData().getPageView() : this.pageView;
 
         if (pageView.isLocked()) {
-            contextMenuActions = pageView.getLockedMenuActions();
-        } else {
-            contextMenuActions = itemView.getContextMenuActions();
+            return pageView;
         }
 
-        if (!this.contextMenu) {
-            this.contextMenu = new ItemViewContextMenu(null, contextMenuActions, false, false);
+        return node.getData();
+    }
+
+    private showContextMenu(row: number, clickPosition: ClickPosition) {
+        const contextMenuExisted = !!this.contextMenu;
+
+        const itemView = this.getContextMenuTargetView(row);
+        this.contextMenu = itemView.createContextMenu();
+
+        if (!contextMenuExisted) {
             this.contextMenu.onHidden(this.removeMenuOpenStyleFromMenuIcon.bind(this));
-        } else {
-            this.contextMenu.setActions(contextMenuActions);
         }
 
         this.contextMenu.getMenu().onBeforeAction((action: Action) => {
