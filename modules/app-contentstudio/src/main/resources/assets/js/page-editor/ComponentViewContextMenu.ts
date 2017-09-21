@@ -21,7 +21,7 @@ import {PartItemType} from './part/PartItemType';
 import {ImageItemType} from './image/ImageItemType';
 import {ItemType} from './ItemType';
 
-
+import Component = api.content.page.region.Component;
 import Action = api.ui.Action;
 import i18n = api.util.i18n;
 
@@ -36,22 +36,19 @@ export class ComponentViewContextMenu extends ItemViewContextMenu<ComponentView>
         let parentIsPage = this.getItemView().getParentItemView().isPage();
         let isTopFragmentComponent = parentIsPage && isFragmentContent;
 
-        let actions: ContextMenuAction[] = [];
+        let actions: ContextMenuAction[] = [this.createResetAction()];
 
         if (!isTopFragmentComponent) {
-            actions.push(this.createSelectParentAction());
-            actions.push(this.createInsertAction());
+            actions.push(
+                this.createSelectParentAction(),
+                this.createInsertAction(),
+                this.createRemoveAction(),
+                this.createDuplicateAction()
+            );
         }
 
         if (this.inspectActionRequired) {
             actions.push(this.createInspectAction());
-        }
-
-        actions.push(this.createResetAction());
-
-        if (!isTopFragmentComponent) {
-            actions.push(this.createRemoveAction());
-            actions.push(this.createDuplicateAction());
         }
 
         if (!this.getItemView().isFragment() && this.getItemView().getLiveEditModel().isFragmentAllowed()) {
@@ -69,20 +66,16 @@ export class ComponentViewContextMenu extends ItemViewContextMenu<ComponentView>
             this.createInsertSubAction('part', PartItemType.get())
         ];
 
-        const isInRegion = this.getItemView().isInRegion() || this.getItemView().isRegion();
-        if (isInRegion && !this.getItemView().isRegionInsideLayout() && !hasFragmentContent) {
+        if (!this.getItemView().isRegionInsideLayout() && !hasFragmentContent) {
             actions.push(this.createInsertSubAction('layout', LayoutItemType.get()));
         }
-        actions.push(this.createInsertSubAction('text', TextItemType.get()));
-        actions.push(this.createInsertSubAction('fragment', FragmentItemType.get()));
+
+        actions.push(
+            this.createInsertSubAction('text', TextItemType.get()),
+            this.createInsertSubAction('fragment', FragmentItemType.get())
+        );
 
         return actions;
-    }
-
-    private createInsertAction(): ContextMenuAction {
-        const action = new api.ui.Action(i18n('action.insert')).setChildActions(this.getInsertActions());
-        
-        return this.createAction(action);
     }
 
     private createSelectParentAction(): ContextMenuAction {
@@ -98,7 +91,13 @@ export class ComponentViewContextMenu extends ItemViewContextMenu<ComponentView>
             }
         });
 
-        return this.createAction(action);
+        return this.createAction(action, 0);
+    }
+
+    private createInsertAction(): ContextMenuAction {
+        const action = new api.ui.Action(i18n('action.insert')).setChildActions(this.getInsertActions());
+
+        return this.createAction(action, 1);
     }
 
     private createInsertSubAction(label: string, componentItemType: ItemType): api.ui.Action {
@@ -113,7 +112,7 @@ export class ComponentViewContextMenu extends ItemViewContextMenu<ComponentView>
     }
 
     protected createComponentView(componentItemType: ItemType): ItemView {
-        let regionView = this.getItemView().getRegionView();
+        let regionView = this.getItemView().getParentItemView();
         let newComponent = regionView.createComponent(componentItemType.toComponentType());
 
         return componentItemType.createView(
@@ -125,7 +124,7 @@ export class ComponentViewContextMenu extends ItemViewContextMenu<ComponentView>
             new ComponentInspectedEvent(this.getItemView()).fire();
         });
 
-        return this.createAction(action);
+        return this.createAction(action, 2);
     }
 
     private createResetAction(): ContextMenuAction {
@@ -135,7 +134,7 @@ export class ComponentViewContextMenu extends ItemViewContextMenu<ComponentView>
             }
         });
 
-        return this.createAction(action);
+        return this.createAction(action, 3);
     }
 
     private createRemoveAction(): ContextMenuAction {
@@ -144,7 +143,7 @@ export class ComponentViewContextMenu extends ItemViewContextMenu<ComponentView>
             this.getItemView().remove();
         });
 
-        return this.createAction(action);
+        return this.createAction(action, 4);
     }
 
     private createDuplicateAction(): ContextMenuAction {
@@ -159,7 +158,7 @@ export class ComponentViewContextMenu extends ItemViewContextMenu<ComponentView>
             new ComponentDuplicatedEvent(this.getItemView(), duplicatedView).fire();
         });
 
-        return this.createAction(action);
+        return this.createAction(action, 5);
     }
 
     private createFragmentAction(): ContextMenuAction {

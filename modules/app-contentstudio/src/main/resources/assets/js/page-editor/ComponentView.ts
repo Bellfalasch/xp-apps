@@ -482,17 +482,8 @@ export class ComponentView<COMPONENT extends Component>
         this.getParentItemView().addComponentView(componentView, index, true);
     }
 
-/*
-    getRegionView(): RegionView {
-        return this.getParentItemView();
-    }
-*/
-    isInRegion(): boolean {
-        return this.getParentItemView().isRegion();
-    }
-
     isRegionInsideLayout(): boolean {
-        return this.isInRegion() && this.getParentItemView().isRegionInsideLayout();
+        return this.getParentItemView().isRegionInsideLayout();
     }
 
     isEmpty(): boolean {
