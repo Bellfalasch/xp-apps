@@ -1,5 +1,6 @@
 import './../api.ts';
 import {ItemViewContextMenu} from './ItemViewContextMenu';
+import {ContextMenuAction} from './ItemViewContextMenu';
 import {PageView} from './PageView';
 import {PageViewContextMenuTitle} from './PageViewContextMenuTitle';
 import {PageInspectedEvent} from './PageInspectedEvent';
@@ -8,7 +9,7 @@ import i18n = api.util.i18n;
 import PageModeChangedEvent = api.content.page.PageModeChangedEvent;
 import PageMode = api.content.page.PageMode;
 
-export class PageViewContextMenu extends ItemViewContextMenu {
+export class PageViewContextMenu extends ItemViewContextMenu<PageView> {
 
     private resetAction: Action;
 
@@ -30,14 +31,10 @@ export class PageViewContextMenu extends ItemViewContextMenu {
         return new PageViewContextMenuTitle(this.getItemView().getLiveEditModel().getContent());
     }
 
-    protected getItemView(): PageView {
-        return <PageView>super.getItemView();
-    }
-
-    private createResetAction() {
+    private createResetAction(): Action {
         const pageModel = this.getItemView().getLiveEditModel().getPageModel();
 
-        this.resetAction = new api.ui.Action(i18n('live.view.reset')).onExecuted(() => {
+        const resetAction = new api.ui.Action(i18n('live.view.reset')).onExecuted(() => {
             if (PageView.debug) {
                 console.log('PageView.reset');
             }
@@ -47,6 +44,10 @@ export class PageViewContextMenu extends ItemViewContextMenu {
         });
 
         this.toggleResetActionEnabled(pageModel.getMode());
+
+        this.resetAction = resetAction;
+
+        return resetAction;
     }
 
     private toggleResetActionEnabled(pageMode: PageMode) {
@@ -55,13 +56,37 @@ export class PageViewContextMenu extends ItemViewContextMenu {
         this.resetAction.setEnabled(resetEnabled);
     }
 
-    protected getActions(): Action[] {
-        const inspectAction = new api.ui.Action(i18n('live.view.inspect')).onExecuted(() => {
+    private createInspectAction(): Action {
+        return new api.ui.Action(i18n('live.view.inspect')).onExecuted(() => {
             new PageInspectedEvent().fire();
         });
+    }
 
-        this.createResetAction();
+    private getActionsForLockedPage() {
+        const unlockAction = new api.ui.Action(i18n('live.view.page.customize'));
 
-        return [inspectAction, this.resetAction];
+        unlockAction.onExecuted(() => {
+            this.getItemView().setLocked(false);
+        });
+
+        return [this.createAction(unlockAction)];
+    }
+    
+    private getActionsForUnlockedPage() {
+        const inspectContextMenuAction = {
+            index: 1,
+            action: this.createInspectAction()
+        };
+
+        const resetContextMenuAction = {
+            index: 2,
+            action: this.createResetAction()
+        };
+
+        return [inspectContextMenuAction, resetContextMenuAction];
+    }
+    
+    protected getActions(): ContextMenuAction[] {
+        return this.getItemView().isLocked() ? this.getActionsForLockedPage() : this.getActionsForUnlockedPage();
     }
 }

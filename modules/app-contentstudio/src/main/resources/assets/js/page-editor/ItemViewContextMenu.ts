@@ -9,25 +9,71 @@ export enum ItemViewContextMenuOrientation {
     DOWN
 }
 
-export class ItemViewContextMenu
-    extends api.dom.DivEl {
+export interface ContextMenuAction {
+    index: number;
+    action: Action;
+}
 
-    private itemView: ItemView;
+export class ItemViewContextMenuBuilder<I> {
+
+    itemView: I;
+
+    showArrow: boolean = true;
+
+    listenToWizard: boolean = true;
+
+    inspectActionRequired: boolean = true;
+
+    setItemView(itemView: I): ItemViewContextMenuBuilder {
+        this.itemView = itemView;
+
+        return this;
+    }
+
+    hideArrow(): ItemViewContextMenuBuilder {
+        this.showArrow = false;
+
+        return this;
+    }
+
+    ignoreWizard(): ItemViewContextMenuBuilder {
+        this.listenToWizard = false;
+
+        return this;
+    }
+
+    hideInspectAction(): ItemViewContextMenuBuilder {
+        this.inspectActionRequired = false;
+
+        return this;
+    }
+
+    build(): ItemViewContextMenu<I> {
+        return new ItemViewContextMenu<I>(this);
+    }
+}
+
+export class ItemViewContextMenu<I extends ItemView> extends api.dom.DivEl {
+
+    private itemView: I;
     private title: ItemViewContextMenuTitle;
     private menu: api.ui.menu.TreeContextMenu;
     private arrow: ItemViewContextMenuArrow;
     private orientation: ItemViewContextMenuOrientation = ItemViewContextMenuOrientation.DOWN;
-    //private actions: Action[];
     private lastPosition: { x: number, y: number };
 
     private orientationListeners: { (orientation: ItemViewContextMenuOrientation): void }[] = [];
 
-    constructor(itemView: ItemView, showArrow: boolean = true, listenToWizard: boolean = true) {
+    protected actions: ContextMenuAction[];
+    protected inspectActionRequired: boolean;
+
+    constructor(builder: ItemViewContextMenuBuilder<I>) {
         super('menu item-view-context-menu');
 
-        this.itemView = itemView;
+        this.itemView = builder.itemView;
+        this.inspectActionRequired = builder.inspectActionRequired;
 
-        if (showArrow) {
+        if (builder.showArrow) {
             this.arrow = new ItemViewContextMenuArrow();
             this.appendChild(this.arrow);
         }
@@ -35,7 +81,7 @@ export class ItemViewContextMenu
         this.initTitle();
         this.initActions();
 
-        this.initEventListeners(listenToWizard);
+        this.initEventListeners(builder.listenToWizard);
 
         api.dom.Body.get().appendChild(this);
     }
@@ -71,6 +117,18 @@ export class ItemViewContextMenu
             this.stopDrag(dragListener, upListener);
         });
 
+
+        this.onOrientationChanged((orientation: ItemViewContextMenuOrientation) => {
+            const dimensions = this.getItemView().getEl().getDimensions();
+
+            // move menu to the top edge of empty view in order to not overlay it
+            if (orientation === ItemViewContextMenuOrientation.UP && this.getItemView().isEmpty()) {
+                this.getEl().setMarginTop('-' + dimensions.height + 'px');
+            } else {
+                this.getEl().setMarginTop('0px');
+            }
+        });
+        
         if (this.title) {
             this.title.onMouseDown((e: MouseEvent) => {
                 e.preventDefault();
@@ -105,7 +163,19 @@ export class ItemViewContextMenu
         throw new Error('Must be implemented by inheritors');
     }
 
-    protected getActions(): Action[] {
+    protected createAction(action: Action, index?: number): ContextMenuAction {
+       return {
+            index: index || this.actions.length,
+            action: action
+        };
+    }
+
+    protected addAction(action: Action, index?: number) {
+        const action = this.createAction(action, index);
+        this.actions.push(action);
+    }
+
+    protected getActions(): ContextMenuAction[] {
         throw new Error('Must be implemented by inheritors');
     }
 
@@ -120,7 +190,7 @@ export class ItemViewContextMenu
             this.removeChild(this.menu);
         }
 
-        this.menu = new api.ui.menu.TreeContextMenu(this.getActions(), false);
+        this.menu = new api.ui.menu.TreeContextMenu(this.getSortedActions(), false);
         this.appendChild(this.menu);
     }
 
@@ -241,8 +311,12 @@ export class ItemViewContextMenu
         return desiredY;
     }
 
-    protected getItemView(): ItemView {
+    protected getItemView(): I {
         return this.itemView;
+    }
+
+    protected getSortedActions(): Action[] {
+        return this.getActions().sort((actionItem1, actionItem2) => actionItem1.index - actionItem2.index).map(actionItem => actionItem.action);
     }
 
 }

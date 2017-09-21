@@ -8,25 +8,15 @@ import {ItemViewPlaceholder} from './ItemViewPlaceholder';
 import {ItemViewContextMenu, ItemViewContextMenuOrientation} from './ItemViewContextMenu';
 import {Shader} from './Shader';
 import {DragAndDrop} from './DragAndDrop';
-import {PageView} from './PageView';
 import {Highlighter} from './Highlighter';
 import {SelectedHighlighter} from './SelectedHighlighter';
 import {Cursor} from './Cursor';
-//import {PageItemType} from './PageItemType';
 import {ItemViewId} from './ItemViewId';
 import {ItemViewSelectedEvent} from './ItemViewSelectedEvent';
 import {ItemViewDeselectedEvent} from './ItemViewDeselectedEvent';
-//import {RegionView} from './RegionView';
 import {ItemViewIconClassResolver} from './ItemViewIconClassResolver';
-//import {ComponentView} from './ComponentView';
-import {CreateItemViewConfig} from './CreateItemViewConfig';
-import {FragmentItemType} from './fragment/FragmentItemType';
-import {TextItemType} from './text/TextItemType';
-import {LayoutItemType} from './layout/LayoutItemType';
-import {PartItemType} from './part/PartItemType';
-//import {LayoutComponentView} from './layout/LayoutComponentView';
 import {Position} from './Position';
-import {ImageItemType} from './image/ImageItemType';
+import {PageView} from './PageView';
 import Component = api.content.page.region.Component;
 import i18n = api.util.i18n;
 
@@ -367,14 +357,6 @@ export class ItemView
         Cursor.get().reset();
     }
 
-    getPageView(): PageView {
-        let itemView: ItemView = this;
-        while (!itemView.isPage()) {
-            itemView = itemView.parentItemView;
-        }
-        return <PageView>itemView;
-    }
-
     remove(): ItemView {
         if (ItemView.debug) {
             console.log('ItemView.remove [' + this.toString() + ']');
@@ -626,17 +608,7 @@ export class ItemView
         let y;
 
         if (!this.contextMenu) {
-            //this.contextMenu = new ItemViewContextMenu(this.contextMenuTitle, this.contextMenuActions);
             this.contextMenu = this.createContextMenu(this);
-            this.contextMenu.onOrientationChanged((orientation: ItemViewContextMenuOrientation) => {
-
-                // move menu to the top edge of empty view in order to not overlay it
-                if (orientation === ItemViewContextMenuOrientation.UP && this.isEmpty()) {
-                    this.contextMenu.getEl().setMarginTop('-' + dimensions.height + 'px');
-                } else {
-                    this.contextMenu.getEl().setMarginTop('0px');
-                }
-            });
         }
 
         if (clickPosition) {
@@ -724,7 +696,9 @@ export class ItemView
         if (selectedView === this) {
             // view is already selected
             return;
-        } else if (selectedView) {
+        }
+
+        if (selectedView) {
             // deselect selected item view if any
             selectedView.deselect();
         }
@@ -815,11 +789,11 @@ export class ItemView
             this.loadMask.hide();
         }
     }
-
+/*
     getContextMenuActions(): api.ui.Action[] {
         return this.contextMenuActions;
     }
-
+*/
     toItemViewArray(): ItemView[] {
 
         return [this];
@@ -908,14 +882,10 @@ export class ItemView
         }
     }
 
-    protected addComponentView(componentView: ItemView, index?: number, isNew: boolean = false) {
-        throw new Error('Must be implemented by inheritors');
-    }
-
     protected getNewItemIndex(): number {
         throw new Error('Must be implemented by inheritors');
     }
-
+/*
     protected createComponentView(componentItemType: ItemType): ItemView {
         let regionView = this.getRegionView();
         let newComponent = regionView.createComponent(componentItemType.toComponentType());
@@ -939,11 +909,26 @@ export class ItemView
 
         return actions;
     }
-
+*/
     protected getRegionView(): ItemView {
         throw new Error('Must be implemented by inheritors');
     }
+/*
+    protected getPageView(): ItemView {
+        throw new Error('Must be implemented by inheritors');
+    }
+    */
 
+
+    getPageView(): PageView {
+        let itemView: ItemView = this;
+        while (!itemView.isPage()) {
+            itemView = itemView.getParentItemView();
+        }
+        return <PageView>itemView;
+    }
+
+/*
     protected createInsertAction(): api.ui.Action {
         return new api.ui.Action(i18n('action.insert')).setChildActions(this.getInsertActions(this.liveEditModel));
     }
@@ -974,7 +959,7 @@ export class ItemView
 
         return action;
     }
-
+*/
     isChildOfItemView(itemView: ItemView) {
         if (this === itemView) {
             return false;
@@ -1001,7 +986,19 @@ export class ItemView
         return true;
     }
 
-    protected isPage(): boolean {
+    isPage(): boolean {
+        return false;
+    }
+
+    isRegion(): boolean {
+        return false;
+    }
+    
+    isInRegion(): boolean {
+        return false;
+    }
+
+    isRegionInsideLayout(): boolean {
         return false;
     }
 }

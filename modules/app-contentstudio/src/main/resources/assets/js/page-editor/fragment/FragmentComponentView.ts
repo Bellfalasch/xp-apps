@@ -252,4 +252,8 @@ export class FragmentComponentView
             listener(event);
         });
     }
+
+    isFragment(): boolean {
+        return true;
+    }
 }

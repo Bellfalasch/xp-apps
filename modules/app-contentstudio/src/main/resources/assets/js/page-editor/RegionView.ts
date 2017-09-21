@@ -1,5 +1,6 @@
 import './../api.ts';
 import {ItemView, ItemViewBuilder} from './ItemView';
+import {PageComponentView} from './PageComponentView';
 import {ComponentView} from './ComponentView';
 import {RegionItemType} from './RegionItemType';
 import {RegionViewContextMenuTitle} from './RegionViewContextMenuTitle';
@@ -64,8 +65,7 @@ export class RegionViewBuilder {
     }
 }
 
-export class RegionView
-    extends ItemView {
+export class RegionView extends ItemView {
 
     private parentView: ItemView;
 
@@ -96,8 +96,8 @@ export class RegionView
     constructor(builder: RegionViewBuilder) {
         super(new ItemViewBuilder().setItemViewIdProducer(builder.parentView.getItemViewIdProducer()).setType(
             RegionItemType.get()).setElement(builder.element).setPlaceholder(new RegionPlaceholder(builder.region)).setViewer(
-            new RegionComponentViewer()).setParentElement(builder.parentElement).setParentView(builder.parentView).setContextMenuTitle(
-            new RegionViewContextMenuTitle(builder.region)));
+            new RegionComponentViewer()).setParentElement(builder.parentElement).setParentView(builder.parentView)/*.setContextMenuTitle(
+            new RegionViewContextMenuTitle(builder.region))*/);
 
         this.addClassEx('region-view');
 
@@ -110,7 +110,7 @@ export class RegionView
 
         this.setRegion(builder.region);
 
-        this.addRegionContextMenuActions();
+        //this.addRegionContextMenuActions();
 
         this.parseComponentViews();
     }
@@ -176,7 +176,7 @@ export class RegionView
     memorizeLastMouseDownTarget(event: MouseEvent) {
         this.mouseDownLastTarget = <HTMLElement> event.target;
     }
-
+/*
     private addRegionContextMenuActions() {
         let actions: api.ui.Action[] = [];
 
@@ -189,7 +189,7 @@ export class RegionView
 
         this.addContextMenuActions(actions);
     }
-
+*/
     getParentItemView(): ItemView {
         return this.parentView;
     }
@@ -610,5 +610,13 @@ export class RegionView
 
     isDraggableView(): boolean {
         return false;
+    }
+
+    isRegion(): boolean {
+        return true;
+    }
+
+    isRegionInsideLayout(): boolean {
+        return this.hasParentLayoutComponentView();
     }
 }

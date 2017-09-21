@@ -6,11 +6,9 @@ import {RegionView, RegionViewBuilder} from './RegionView';
 import {ComponentView} from './ComponentView';
 import {ItemViewAddedEvent} from './ItemViewAddedEvent';
 import {ItemViewRemovedEvent} from './ItemViewRemovedEvent';
-import {ItemViewContextMenu} from './ItemViewContextMenu';
+import {ItemViewContextMenuBuilder} from './ItemViewContextMenu';
 import {PageItemType} from './PageItemType';
-import {PageViewContextMenuTitle} from './PageViewContextMenuTitle';
 import {PagePlaceholder} from './PagePlaceholder';
-import {PageInspectedEvent} from './PageInspectedEvent';
 import {ItemViewSelectedEvent} from './ItemViewSelectedEvent';
 import {ItemViewContextMenuPosition} from './ItemViewContextMenuPosition';
 import {TextItemType} from './text/TextItemType';
@@ -87,8 +85,6 @@ export class PageView
 
     private pageLockedListeners: { (locked: boolean): void }[];
 
-    private resetAction: api.ui.Action;
-
     private itemViewAddedListener: (event: ItemViewAddedEvent) => void;
 
     private itemViewRemovedListener: (event: ItemViewRemovedEvent) => void;
@@ -99,11 +95,9 @@ export class PageView
 
     private propertyChangedListener: (event: api.PropertyChangedEvent) => void;
 
-    private pageModeChangedListener: (event: PageModeChangedEvent) => void;
-
     private customizeChangedListener: (value: boolean) => void;
 
-    private lockedContextMenu: ItemViewContextMenu;
+    private lockedContextMenu: PageViewContextMenu;
 
     private disableContextMenu: boolean;
 
@@ -126,8 +120,6 @@ export class PageView
             .setContextMenuTitle(new PageViewContextMenuTitle(builder.liveEditModel.getContent()))*/);
 
         this.setPlaceholder(new PagePlaceholder(this));
-
-        this.addPageContextMenuActions();
 
         this.pageModel = builder.liveEditModel.getPageModel();
 
@@ -164,9 +156,9 @@ export class PageView
     }
 
     protected createContextMenu(): PageViewContextMenu {
-        return new PageViewContextMenu(this, this.liveEditModel.getContent());
+        return <PageViewContextMenu>new ItemViewContextMenuBuilder<PageView>().setItemView(this).build();
     }
-    
+
     private registerPageModel() {
         if (PageView.debug) {
             console.log('PageView.registerPageModel', this.pageModel);
@@ -179,15 +171,6 @@ export class PageView
             this.refreshEmptyState();
         };
         this.pageModel.onPropertyChanged(this.propertyChangedListener);
-
-        this.pageModeChangedListener = (event: PageModeChangedEvent) => {
-            let resetEnabled = event.getNewMode() !== PageMode.AUTOMATIC && event.getNewMode() !== PageMode.NO_CONTROLLER;
-            if (PageView.debug) {
-                console.log('PageView.pageModeChangedListener setting reset enabled', resetEnabled);
-            }
-            this.resetAction.setEnabled(resetEnabled);
-        };
-        this.pageModel.onPageModeChanged(this.pageModeChangedListener);
 
         this.customizeChangedListener = ((value) => {
             if (this.isLocked() && value) {
@@ -203,28 +186,6 @@ export class PageView
         }
         pageModel.unPropertyChanged(this.propertyChangedListener);
         pageModel.unCustomizeChanged(this.customizeChangedListener);
-    }
-
-    private addPageContextMenuActions() {
-        let pageModel = this.liveEditModel.getPageModel();
-        let inspectAction = new api.ui.Action(i18n('live.view.inspect')).onExecuted(() => {
-            new PageInspectedEvent().fire();
-        });
-
-        this.resetAction = new api.ui.Action(i18n('live.view.reset')).onExecuted(() => {
-            if (PageView.debug) {
-                console.log('PageView.reset');
-            }
-            this.setIgnorePropertyChanges(true);
-            pageModel.reset(this);
-            this.setIgnorePropertyChanges(false);
-        });
-
-        if (pageModel.getMode() === PageMode.AUTOMATIC || pageModel.getMode() === PageMode.NO_CONTROLLER) {
-            this.resetAction.setEnabled(false);
-        }
-
-        this.addContextMenuActions([inspectAction, this.resetAction]);
     }
 
     private initListeners() {
@@ -387,10 +348,6 @@ export class PageView
         }
     }
 
-    private createLockedContextMenu() {
-        return new ItemViewContextMenu(this.getContextMenuTitle(), this.getLockedMenuActions());
-    }
-
     getLockedMenuActions(): api.ui.Action[] {
         let unlockAction = new api.ui.Action(i18n('live.view.page.customize'));
 
@@ -419,7 +376,7 @@ export class PageView
     handleShaderClick(event: MouseEvent) {
         if (this.isLocked()) {
             if (!this.lockedContextMenu) {
-                this.lockedContextMenu = this.createLockedContextMenu();
+                this.lockedContextMenu = this.createContextMenu();
             }
             if (this.lockedContextMenu.isVisible()) {
                 this.deselectLocked();
@@ -1039,5 +996,9 @@ export class PageView
 
     isPage(): boolean {
         return true;
+    }
+
+    getPageView(): PageView {
+        return this;
     }
 }
